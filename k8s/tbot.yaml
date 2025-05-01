@@ -1,0 +1,114 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tbot
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: tbot
+rules:
+  - resources: ["pods", "nodes", "nodes/proxy"]
+    apiGroups: [""]
+    verbs: ["get"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: tbot
+subjects:
+  - kind: ServiceAccount
+    name: tbot
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: tbot
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tbot-config
+data:
+  tbot.yaml: |
+    version: v2
+    debug: true
+    onboarding:
+      join_method: kubernetes
+      token: k8s-bot-token
+    storage:
+      type: memory
+    proxy_server: tp1.floppy.co:443
+    services:
+      - type: workload-identity-api
+        listen: unix:///run/tbot/sockets/workload.sock
+        selector:
+          name: k8s-workload-identity
+        attestors:
+          sigstore:
+            enabled: true
+          kubernetes:
+            enabled: true
+            kubelet:
+              skip_verify: true
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tbot
+spec:
+  selector:
+    matchLabels:
+      app: tbot
+  template:
+    metadata:
+      labels:
+        app: tbot
+    spec:
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+      hostPID: true
+      containers:
+        - name: tbot
+          image: <tbot image>
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+          args:
+            - start
+            - -c
+            - /config/tbot.yaml
+            - --log-format
+            - json
+          volumeMounts:
+            - mountPath: /config
+              name: config
+            - mountPath: /var/run/secrets/tokens
+              name: join-sa-token
+            - name: tbot-sockets
+              mountPath: /run/tbot/sockets
+              readOnly: false
+          env:
+            - name: TELEPORT_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: KUBERNETES_TOKEN_PATH
+              value: /var/run/secrets/tokens/join-sa-token
+      serviceAccountName: tbot
+      volumes:
+        - name: tbot-sockets
+          hostPath:
+            path: /run/tbot/sockets
+            type: DirectoryOrCreate
+        - name: config
+          configMap:
+            name: tbot-config
+        - name: join-sa-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: join-sa-token
+                  expirationSeconds: 600
+                  audience: tp1.floppy.co

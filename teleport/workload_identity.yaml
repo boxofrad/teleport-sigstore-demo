@@ -1,0 +1,12 @@
+kind: workload_identity
+version: v1
+metadata:
+  labels:
+    application: k8s-service
+  name: k8s-workload-identity
+spec:
+  spiffe:
+    id: /k8s/{{ workload.kubernetes.labels["app"] }}
+  rules:
+    allow:
+      - expression: 'sigstore.policy_satisfied("github-provenance")'

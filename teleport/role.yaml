@@ -1,0 +1,14 @@
+kind: role
+version: v6
+metadata:
+  name: k8s-bot-role
+spec:
+  allow:
+    rules:
+      - resources:
+          - workload_identity
+        verbs:
+          - list
+          - read
+    workload_identity_labels:
+      application: k8s-service

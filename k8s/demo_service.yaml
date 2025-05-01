@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-service
+  labels:
+    app: demo-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-service
+  template:
+    metadata:
+      labels:
+        app: demo-service
+    spec:
+      containers:
+        - name: service
+          image: ghcr.io/boxofrad/teleport-sigstore-demo:main
+          volumeMounts:
+            - mountPath: /run/tbot/sockets
+              name: tbot-sockets
+              readOnly: false
+          env:
+            - name: PORT
+              value: "8080"
+            - name: SPIFFE_ENDPOINT_SOCKET
+              value: unix:///run/tbot/sockets/workload.sock
+            - name: S3_BUCKET_NAME
+              value: boxofrad-bucket
+          ports:
+            - containerPort: 8080
+      volumes:
+        - name: tbot-sockets
+          hostPath:
+            path: /run/tbot/sockets
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-service
+spec:
+  selector:
+    app: demo-service
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: LoadBalancer

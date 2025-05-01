@@ -1,0 +1,19 @@
+kind: token
+version: v2
+metadata:
+  name: k8s-bot-token
+spec:
+  bot_name: k8s-bot
+  join_method: kubernetes
+  kubernetes:
+    allow:
+      - service_account: default:tbot
+
+    # kubectl get --raw /openid/v1/jwks | pbcopy
+    type: static_jwks
+    static_jwks:
+      jwks: |
+        {"keys":[{"use":"sig","kty":"RSA","kid":"RtyrzttmT-kCk1gAVqLxX3QFBXBEFMM__sS3SXJzhd4","alg":"RS256","n":"nIhSz9LNLVQgWoEqQt6jXEhKnetkKMf1mdeBJsvOUtNGJ9eaN79zY5Lwer0AJHW43J9C3hi-VPWwI-0CxNO7a6r-LU73CZDryPrn7tjoST8Rd-FyZCL3bq7lu7V_bOggAiMnqOGBIEB6gQkbfoquPuhDHfKEWsuYlChl1rLkftHxNasqH7HcGgD_sDNjbHk059qqTA9F0OIESg_n97sYXzD0tnEQA4Ivn6A-Du2mWNCipLUF5sq4wOtZJ8eeYhqnsZy2pFDNfgTU2DAIa9EZ0kTduZTJ7ZSNc7e1cN5z7p4fGsfhpmTYpmslUw0KdBjSdKv08lYrVSXAsKiIHSYE0w","e":"AQAB"}]}
+
+  roles:
+    - Bot

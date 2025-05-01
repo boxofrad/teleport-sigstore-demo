@@ -1,0 +1,7 @@
+kind: bot
+version: v1
+metadata:
+  name: k8s-bot
+spec:
+  roles:
+    - k8s-bot-role
